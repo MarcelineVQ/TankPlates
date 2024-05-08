@@ -1,0 +1,9 @@
+## Interface: 11200
+## Title: Tank Plates
+## Notes: highlight mobs that aren't targeting you
+## Author: ehawne
+# Dependencies: SuperAPI
+# SavedVariables: SuperAPI_nameplatebars
+
+#SuperAPI_Castlib.xml
+TankPlates.lua
