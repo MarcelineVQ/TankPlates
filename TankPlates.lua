@@ -54,6 +54,11 @@ local function UpdatePlate(unitGUID)
   local _,playerGUID = UnitExists("player")
   -- tp_print(arg1 .. " " .. unitGUID)
   -- if not tracked_units[unitGUID] then tracked_units[unitGUID].cc = UnitIsCC(unitGUID) end
+
+  -- is this plate even stored yet?
+  -- Shouldn't happen, but does
+  if not tracked_units[unitGUID] then return end
+
   -- if we can attack and we're in combat, proceed
   if UnitCanAttack("player",unitGUID) and UnitAffectingCombat("player") then
     -- cc'd mob, avoid it
