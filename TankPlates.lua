@@ -104,6 +104,16 @@ local function UpdateTrackedUnit(unitGUID, plate)
     UpdatePlate(unitGUID)
   end )
 
+  plate:SetScript("OnHide", function (self,elapsed)
+    -- reset the bar, when the game remakes the plate it might not refer to the same mob
+    local unitGUID = this:GetName(1)
+    if tracked_units[unitGUID] then
+    tracked_units[unitGUID].healthbar:SetScript("OnUpdate",nil)
+    tracked_units[unitGUID].healthbar:SetScript("OnValueChanged",nil)
+    tracked_units[unitGUID] = nil
+    end
+  end )
+
   -- Function to maintain color on healthbar update
   local function HealthBarUpdate()
     local tracked = tracked_units[unitGUID]
@@ -114,10 +124,10 @@ local function UpdateTrackedUnit(unitGUID, plate)
 end
 
 local plateTick = 0
-local unitsTick = 0
+-- local unitsTick = 0
 function Update()
   plateTick = plateTick + arg1
-  unitsTick = unitsTick + arg1
+  -- unitsTick = unitsTick + arg1
   if plateTick >= 0.25 then
     plateTick = 0
     local frames = { WorldFrame:GetChildren() }
@@ -130,15 +140,16 @@ function Update()
         end
       end
     end
-  elseif unitsTick > 5 then -- clean units db
-    unitsTick = 0
-    for k,unit in pairs(tracked_units) do
-      local gone = not UnitExists(k) or UnitIsDead(k)
-      if gone then
-        debug_print("cleaning: " .. k)
-        tracked_units[k] = nil
-      end
-    end
+  -- shouldn't need this, OnHide cleans up
+  -- elseif unitsTick > 5 then -- clean units db
+  --   unitsTick = 0
+  --   for k,unit in pairs(tracked_units) do
+  --     local gone = not UnitExists(k) or UnitIsDead(k)
+  --     if gone then
+  --       debug_print("cleaning: " .. k)
+  --       tracked_units[k] = nil
+  --     end
+  --   end
   end
 end
 
