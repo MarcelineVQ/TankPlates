@@ -4,6 +4,7 @@
 ## Author: ehawne
 # Dependencies: SuperAPI
 # SavedVariables: SuperAPI_nameplatebars
+# OptionalDeps: ShaguTweaks, PfUI, ShaguPlates
 
 #SuperAPI_Castlib.xml
 TankPlates.lua
