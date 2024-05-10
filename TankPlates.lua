@@ -137,7 +137,7 @@ end
 --       }
 --     end
 --   end)
-end
+-- end
 
 local plateTick = 0
 local unitsTick = 0
