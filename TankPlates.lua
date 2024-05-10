@@ -41,9 +41,6 @@ end
 local function UpdatePlate(unitGUID)
   local _,playerGUID = UnitExists("player")
   local _,targetGUID = UnitExists(unitGUID.."target")
-  -- tp_print(arg1 .. " " .. unitGUID)
-  -- if not tracked_units[unitGUID] then tracked_units[unitGUID].cc = UnitIsCC(unitGUID) end
-
   -- is this plate even stored yet?
   -- Shouldn't happen, but does
   if not tracked_units[unitGUID] then return end
@@ -52,122 +49,84 @@ local function UpdatePlate(unitGUID)
   if UnitAffectingCombat("player") and (targetGUID or (UnitReaction(unitGUID,playerGUID) < 4)) then
     -- cc'd mob, avoid it
     if not targetGUID and tracked_units[unitGUID].cc == true then
-      debug_print("cc " .. unitGUID)
-      tracked_units[unitGUID].healthbar:SetStatusBarColor(0,0,0,0.5)
-      -- tracked_units[unitGUID].targeting_you = false
+      debug_print("cc " .. unitGUID .. " " .. UnitName(unitGUID))
+      tracked_units[unitGUID].color = {r = 0, g = 0, b = 0, a = 0.5}
     -- you have aggro
     elseif targetGUID and (targetGUID == playerGUID) then
-      debug_print("aggro " .. unitGUID)
-      tracked_units[unitGUID].healthbar:SetStatusBarColor(0,1,0,1)
+      debug_print("aggro " .. unitGUID .. " " .. UnitName(unitGUID))
+      tracked_units[unitGUID].color = {r = 0, g = 1, b = 0, a = 1}
       tracked_units[unitGUID].targeting = playerGUID
     -- targeting someone else
     elseif targetGUID and (targetGUID ~= playerGUID) then
-      debug_print("aggro not-you: " .. targetGUID)
-      tracked_units[unitGUID].healthbar:SetStatusBarColor(1,0,0,1)
+      debug_print("aggro not-you: " .. unitGUID .. " " .. UnitName(unitGUID))
+      tracked_units[unitGUID].color = {r = 1, g = 0, b = 0, a = 1}
       tracked_units[unitGUID].targeting = targetGUID
     else
-      debug_print("not aggro " .. unitGUID)
-      tracked_units[unitGUID].healthbar:SetStatusBarColor(1,0,0,1)
-      -- tracked_units[unitGUID].targeting_you = false
-    end
-  else
-    local c = tracked_units[unitGUID].original_bar_color
-    tracked_units[unitGUID].healthbar:SetStatusBarColor(c[1],c[2],c[3],c[4])
-  end
-end
-
-local function UpdatePlate2(unitGUID)
-  local _,playerGUID = UnitExists("player")
-  local _,targetGUID = UnitExists(unitGUID.."target")
-  -- tp_print(arg1 .. " " .. unitGUID)
-  -- if not tracked_units[unitGUID] then tracked_units[unitGUID].cc = UnitIsCC(unitGUID) end
-
-  -- is this plate even stored yet?
-  -- Shouldn't happen, but does
-  if not tracked_units[unitGUID] then return end
-
-  -- if we can attack and we're in combat, proceed
-  if UnitAffectingCombat("player") and (targetGUID or (UnitReaction(unitGUID,playerGUID) < 4)) then
-    -- cc'd mob, avoid it
-    if not targetGUID and tracked_units[unitGUID].cc == true then
-      debug_print("cc " .. unitGUID)
-      this.healthbar:SetStatusBarColor(0,0,0,0.5)
-      -- tracked_units[unitGUID].targeting_you = false
-    -- you have aggro
-    elseif targetGUID and (targetGUID == playerGUID) then
-      debug_print("aggro " .. unitGUID)
-      this.healthbar:SetStatusBarColor(0,1,0,1)
-      tracked_units[unitGUID].targeting = playerGUID
-    -- targeting someone else
-    elseif targetGUID and (targetGUID ~= playerGUID) then
-      debug_print("aggro not-you: " .. targetGUID)
-      this.healthbar:SetStatusBarColor(1,0,0,1)
-      tracked_units[unitGUID].targeting = targetGUID
-    else
-      debug_print("not aggro " .. unitGUID)
-      this.healthbar:SetStatusBarColor(1,0,0,1)
+      debug_print("not aggro " .. unitGUID .. " " .. UnitName(unitGUID))
+      tracked_units[unitGUID].color = {r = 1, g = 0, b = 0, a = 1}
       -- tracked_units[unitGUID].targeting_you = false
     end
   else
     -- debug_print("not combat " .. unitGUID)
     local c = tracked_units[unitGUID].original_bar_color
-    this.healthbar:SetStatusBarColor(c[1],c[2],c[3],c[4])
+    tracked_units[unitGUID].color = tracked_units[unitGUID].original_bar_color
   end
 end
 
--- this is gross
--- if ShaguTweaks and ShaguTweaks.libnameplate then
---   table.insert(ShaguTweaks.libnameplate.OnUpdate,function ()
---     UpdatePlate(this:GetName(1))
---   end)
---   table.insert(ShaguTweaks.libnameplate.OnInit,function()
---     local unitGUID = this:GetName(1)
---     if tonumber(unitGUID) ~= 0 and this:IsShown() and this:IsObjectType("Button") then
---       -- local original_healthbar,original_castbar = this:GetChildren()
---       local r,g,b,a = this.healthbar:GetStatusBarColor()
+local function GetOriginalBarColor(healthbar)
+  local r, g, b, a = healthbar:GetStatusBarColor()
+  return { r = r, g = g, b = b, a = a or 1 }
+end
 
---       local v = tracked_units[unitGUID]
---       tracked_units[unitGUID] = {
---         targeting = v and v.targeting or nil,
---         casting_at = v and v.casting_at or nil,
---         original_bar_color = v and v.original_bar_color or { r,g,b,a },
---         cc = v and v.cc or nil,
---         healthbar = this.healthbar,
---         castbar = this.castbar,
---       }
---     end
---   end)
--- end
+-- Function to apply a color to a health bar
+local function SetBarColor(healthbar, color)
+  healthbar:SetStatusBarColor(color.r, color.g, color.b, color.a or 1)
+end
+
+local function UpdateTrackedUnit(unitGUID, plate)
+  local original_healthbar,original_castbar = plate:GetChildren()
+  local r,g,b,a = original_healthbar:GetStatusBarColor()
+
+  local tracked = tracked_units[unitGUID] or {}
+
+  tracked_units[unitGUID] = {
+    targeting = tracked.targeting or nil,
+    casting_at = tracked.casting_at or nil,
+    original_bar_color = tracked.original_bar_color or GetOriginalBarColor(original_healthbar),
+    cc = tracked.cc or nil,
+    healthbar = original_healthbar,
+    castbar = original_castbar,
+    color = tracked.color or { r = r, g = g, b = b, a = a },
+  }
+  local fn = plate:GetScript("OnUpdate") -- just in case someone else has modifications as well
+  plate:SetScript("OnUpdate", function (self,elapsed)
+    if fn then fn(self,elapsed) end
+    UpdatePlate(unitGUID)
+  end )
+
+  -- Function to maintain color on healthbar update
+  local function HealthBarUpdate()
+    local tracked = tracked_units[unitGUID]
+    if tracked then SetBarColor(this, tracked.color) end
+  end
+  tracked_units[unitGUID].healthbar:SetScript("OnUpdate",HealthBarUpdate)
+  tracked_units[unitGUID].healthbar:SetScript("OnValueChanged",HealthBarUpdate)
+end
 
 local plateTick = 0
 local unitsTick = 0
 function Update()
   plateTick = plateTick + arg1
   unitsTick = unitsTick + arg1
-  if plateTick >= 0.5 then
+  if plateTick >= 0.25 then
     plateTick = 0
     local frames = { WorldFrame:GetChildren() }
     parentcount = WorldFrame:GetNumChildren()
     for i, plate in ipairs(frames) do
-      if plate then
-        if plate:IsShown() and plate:IsObjectType("Button") then
-          local unitGUID = plate:GetName(1)
-
-          local original_healthbar,original_castbar = plate:GetChildren()
-          local r,g,b,a = original_healthbar:GetStatusBarColor()
-
-          local v = tracked_units[unitGUID]
-          tracked_units[unitGUID] = {
-            targeting = v and v.targeting or nil,
-            casting_at = v and v.casting_at or nil,
-            original_bar_color = v and v.original_bar_color or { r,g,b,a },
-            cc = v and v.cc or nil,
-            healthbar = original_healthbar,
-            castbar = original_castbar,
-          }
-          -- UpdatePlate2(unitGUID)
-
-          tracked_units[unitGUID].healthbar:SetScript("OnValueChanged",function () UpdatePlate(unitGUID) end)
+      if plate and (plate:IsShown() and plate:IsObjectType("Button")) then
+        local unitGUID = plate:GetName(1)
+        if not tracked_units[unitGUID] then
+          UpdateTrackedUnit(unitGUID, plate)
         end
       end
     end
@@ -182,6 +141,21 @@ function Update()
     end
   end
 end
+
+-- doesn't work
+-- if ShaguTweaks and ShaguTweaks.libnameplate then
+--   table.insert(ShaguTweaks.libnameplate.OnUpdate,function ()
+--     UpdatePlate(this:GetName(1))
+--   end,1)
+--   table.insert(ShaguTweaks.libnameplate.OnInit,function()
+--     local unitGUID = this:GetName(1)
+--     if tonumber(unitGUID) ~= 0 and this:IsShown() and this:IsObjectType("Button") then
+--       if not tracked_units[unitGUID] then
+--         UpdateTrackedUnit(unitGUID, plate)
+--       end
+--     end
+--   end)
+-- end
 
 local function Events()
   if event == "UNIT_CASTEVENT" then
