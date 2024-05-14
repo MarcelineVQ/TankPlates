@@ -141,7 +141,7 @@ local function IsNamePlate(frame)
 end
 
 local function InitPlate(plate)
-  tp_print("plate init")
+  -- tp_print("plate init")
 
   local guid = plate:GetName(1)
 
