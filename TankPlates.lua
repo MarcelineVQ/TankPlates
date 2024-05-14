@@ -156,9 +156,11 @@ local function InitPlate(plate)
   plate.cc = nil
 
   HookScript(plate,"OnUpdate", function (x,y,z)
-    -- the game re-uses plates, update the mob it's for
     plate.tick = plate.tick + arg1
-    local guid = plate:GetName(1)
+    -- local guid = plate:GetName(1)
+
+    -- the game re-uses plates, update the mob it's for
+    plate.guid = plate:GetName(1)
 
     local _,targeting = UnitExists(plate.guid.."target")
     if targeting ~= plate.current_target then
@@ -176,14 +178,14 @@ local function InitPlate(plate)
   local function UpdateHealth()
     local _,playerGUID = UnitExists("player")
     local plate = this:GetParent()
-    local is_hostile = UnitReaction(plate.guid,playerGUID)
+    local reaction_level = UnitReaction(plate.guid,playerGUID) or 4
 
     -- if we can attack and we're in combat, proceed
-    if UnitAffectingCombat("player") and (plate.current_target or is_hostile) then
+    if UnitAffectingCombat("player") and (plate.current_target or reaction_level < 4) then
       -- cc'd mob, avoid it
       if not plate.current_target and plate.cc then
         -- tp_print("cc " .. plate.guid .. " " .. UnitName(plate.guid))
-        this:SetStatusBarColor(0,0,0,0.5)
+        this:SetStatusBarColor(1,1,1,0.6)
       -- you have aggro
       elseif plate.current_target and (plate.current_target == playerGUID) then
         -- tp_print("aggro " .. plate.guid .. " " .. UnitName(plate.guid))
