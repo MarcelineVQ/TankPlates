@@ -1,11 +1,12 @@
 local DEBUG = false
 
 local function tp_print(msg)
-    DEFAULT_CHAT_FRAME:AddMessage(msg)
+  if type(msg) == "boolean" then msg = msg and "true" or "false" end
+  DEFAULT_CHAT_FRAME:AddMessage(msg)
 end
 
 local function debug_print(msg)
-  if DEBUG then DEFAULT_CHAT_FRAME:AddMessage(msg) end
+  if DEBUG then tp_print(msg) end
 end
 
 -- stop loading addon if no superwow
@@ -143,6 +144,9 @@ end
 local function InitPlate(plate)
   -- tp_print("plate init")
 
+  -- how does pfui know who's being attacked
+  -- reset the damn pfui map
+
   local guid = plate:GetName(1)
 
   plate.guid = guid
@@ -153,18 +157,21 @@ local function InitPlate(plate)
   plate.original_color = { plate.healthbar:GetStatusBarColor() }
 
   plate.tick = 0
-  plate.cc = nil
+  plate.cc = false
+  plate.casting = false
 
-  HookScript(plate,"OnUpdate", function (x,y,z)
+  HookScript(plate,"OnUpdate", function ()
     plate.tick = plate.tick + arg1
-    -- local guid = plate:GetName(1)
 
     -- the game re-uses plates, update the mob it's for
     plate.guid = plate:GetName(1)
 
+    -- plate.cc =   plate.cc or false
+    -- plate.casting =   plate.casting or false
+
     local _,targeting = UnitExists(plate.guid.."target")
     if targeting ~= plate.current_target then
-      plate.previous_target = plate.current_targete
+      plate.previous_target = plate.current_target
       plate.current_target = targeting
     end
 
@@ -176,33 +183,27 @@ local function InitPlate(plate)
   end)
 
   local function UpdateHealth()
-    local _,playerGUID = UnitExists("player")
+    local _, playerGUID = UnitExists("player")
     local plate = this:GetParent()
-    local reaction_level = UnitReaction(plate.guid,playerGUID) or 4
+    local reaction_level = UnitReaction(plate.guid, playerGUID) or 4
 
-    -- if we can attack and we're in combat, proceed
     if UnitAffectingCombat("player") and (plate.current_target or reaction_level < 4) then
-      -- cc'd mob, avoid it
       if not plate.current_target and plate.cc then
-        -- tp_print("cc " .. plate.guid .. " " .. UnitName(plate.guid))
-        this:SetStatusBarColor(1,1,1,0.6)
-      -- you have aggro
-      elseif plate.current_target and (plate.current_target == playerGUID) then
-        -- tp_print("aggro " .. plate.guid .. " " .. UnitName(plate.guid))
-        this:SetStatusBarColor(0,1,0,1)
-      -- targeting someone else
-      elseif plate.current_target and (plate.current_target ~= playerGUID) then
-        -- tp_print("aggro not-you: " .. plate.guid .. " " .. UnitName(plate.guid))
-        this:SetStatusBarColor(1,0,0,1)
+        this:SetStatusBarColor(1, 1, 1, 0.6)
+      elseif (plate.current_target == playerGUID) or
+        (plate.casting and (plate.previous_target == playerGUID and plate.casting)) or
+        not plate.current_target and plate.previous_target == playerGUID then
+        -- The cases we want 'green' for are:
+        -- 1. Being targeted
+        -- 2. Being the previous target if a mob is casting on someone else
+        -- 3. Being the previous target when a mob has no current target
+        this:SetStatusBarColor(0, 1, 0, 1)
       else
-        -- no target
-        -- tp_print("not aggro " .. plate.guid .. " " .. UnitName(plate.guid))
-        this:SetStatusBarColor(1,0,0,1)
+        this:SetStatusBarColor(1, 0, 0, 1)
       end
     else
-      -- tp_print("else")
       local c = plate.original_color
-      this:SetStatusBarColor(c[1],c[2],c[3],c[4])
+      this:SetStatusBarColor(c[1], c[2], c[3], c[4])
     end
   end
 
@@ -240,20 +241,22 @@ local function Update()
 end
 
 local function Events()
-  -- if event == "UNIT_CASTEVENT" then
-  --   -- if we see a cc get applied on a mob we have plates for, track it
-  --   local _,source = UnitExists(arg1)
-  --   local _,target = UnitExists(arg2)
-  --   local n,_,icon,_,_ = SpellInfo(arg4)
-  --   if target and plates[target] and arg3 == "CAST" and icon and cc_spells[icon] then
-  --     plates[target].cc = true
-  --   end
-
-  --   -- mob is casting on someone, was it targeting you just before that?
-  --   if source and plates[source] and target and arg3 == "START" then
-  --     plates[source].casting_at = target
-  --   end
-  -- end
+  if event == "UNIT_CASTEVENT" then
+    local _,source = UnitExists(arg1)
+    local _,target = UnitExists(arg2)
+    local n,_,icon,_,_ = SpellInfo(arg4)
+    -- local source_is_plate = false
+    for k,plate in pairs(registry) do
+      if source == plate.guid then
+        if arg3 == "START" then
+          plate.casting = true
+        elseif arg3 == "FAIL" or arg3 == "CAST" then
+          plate.casting = false
+        end
+        break
+      end
+    end
+  end
 end
 
 local tankplates = CreateFrame("Frame")
