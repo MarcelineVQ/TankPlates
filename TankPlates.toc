@@ -1,10 +1,6 @@
 ## Interface: 11200
-## Title: Tank Plates
+## Title: Tank Plates 1.1.2
 ## Notes: highlight mobs that aren't targeting you
-## Author: ehawne
-# Dependencies: SuperAPI
-# SavedVariables: SuperAPI_nameplatebars
-# OptionalDeps: ShaguTweaks, PfUI, ShaguPlates
+## Author: Ehawne (Weird Vibes)
 
-#SuperAPI_Castlib.xml
 TankPlates.lua
