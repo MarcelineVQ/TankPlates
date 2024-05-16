@@ -212,6 +212,15 @@ local function InitPlate(plate)
     this:GetParent().original_color = { this:GetStatusBarColor() }
   end)
 
+  plate.healthbar:SetScript("OnHide", function()
+    -- plate  has 'gone away' need to reset state
+    -- next update will restore it
+    this:GetParent().current_target = nil
+    this:GetParent().previous_target = nil
+    plate.cc = false
+    plate.casting = false
+  end)
+
   plate.healthbar:SetScript("OnUpdate", UpdateHealth)
   plate.healthbar:SetScript("OnValueChanged", UpdateHealth)
 end
