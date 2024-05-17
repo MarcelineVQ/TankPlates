@@ -147,7 +147,8 @@ local function InitPlate(plate)
     p.previous_target = nil
     
     p.healthbar = plate:GetChildren()
-    p.original_color = { plate.healthbar:GetStatusBarColor() }
+    -- original color should hopefully be pulled via OnShow
+    p.original_color = { p.healthbar:GetStatusBarColor() } -- is this correct to do?
   
     p.tick = 0
     p.cc = false
