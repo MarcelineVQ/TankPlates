@@ -44,85 +44,6 @@ local function UnitIsCC(unit)
   return false
 end
 
--- local function UpdatePlate(vplate)
---   if not plates[vplate.unit] then
---     tp_print("|cffff0000impossible error:|r plate not tracked, report this")
---     return
---   end
---   local _,playerGUID = UnitExists("player")
---   local _,targetGUID = UnitExists(vplate.unit.."target")
---   local unitGUID = vplate.unit
---   local healthbar = vplate.healthbar
-
---   -- if we can attack and we're in combat, proceed
---   if UnitAffectingCombat("player") and (targetGUID or (UnitReaction(unitGUID,playerGUID) < 4)) then
---     -- cc'd mob, avoid it
---     if not targetGUID and vplate.cc == true then
---       debug_print("cc " .. unitGUID .. " " .. UnitName(unitGUID))
---       healthbar:SetStatusBarColor(0,0,0,0.5)
---     -- you have aggro
---     elseif targetGUID and (targetGUID == playerGUID) then
---       debug_print("aggro " .. unitGUID .. " " .. UnitName(unitGUID))
---       healthbar:SetStatusBarColor(0,1,0,1)
---     -- targeting someone else
---     elseif targetGUID and (targetGUID ~= playerGUID) then
---       debug_print("aggro not-you: " .. unitGUID .. " " .. UnitName(unitGUID))
---       healthbar:SetStatusBarColor(1,0,0,1)
---     else
---       -- no target
---       debug_print("not aggro " .. unitGUID .. " " .. UnitName(unitGUID))
---       healthbar:SetStatusBarColor(1,0,0,1)
---     end
---   else
---     local c = vplate.original_color
---     healthbar:SetStatusBarColor(c[1],c[2],c[3],c[4])
---   end
--- end
-
--- local function UpdateHealth(plate,cc,original_color)
---   -- if not plates[vplate.unit] then
---   --   tp_print("|cffff0000impossible error:|r plate not tracked, report this")
---   --   return
---   -- end
---   local unitGUID = plate:GetName(1)
---   local _,playerGUID = UnitExists("player")
---   local _,targetGUID = UnitExists(unitGUID.."target")
-
---   -- if we can attack and we're in combat, proceed
---   if UnitAffectingCombat("player") and (targetGUID or (UnitReaction(unitGUID,playerGUID) < 4)) then
---     -- cc'd mob, avoid it
---     if not targetGUID and cc then
---       debug_print("cc " .. unitGUID .. " " .. UnitName(unitGUID))
---       this:SetStatusBarColor(0,0,0,0.5)
---     -- you have aggro
---     elseif targetGUID and (targetGUID == playerGUID) then
---       debug_print("aggro " .. unitGUID .. " " .. UnitName(unitGUID))
---       this:SetStatusBarColor(0,1,0,1)
---     -- targeting someone else
---     elseif targetGUID and (targetGUID ~= playerGUID) then
---       debug_print("aggro not-you: " .. unitGUID .. " " .. UnitName(unitGUID))
---       this:SetStatusBarColor(1,0,0,1)
---     else
---       -- no target
---       debug_print("not aggro " .. unitGUID .. " " .. UnitName(unitGUID))
---       this:SetStatusBarColor(1,0,0,1)
---     end
---   else
---     local c = original_color
---     this:SetStatusBarColor(c[1],c[2],c[3],c[4])
---   end
--- end
-
--- local function PlateUpdate()
---   local guid = this:GetName(1)
---   if not plates[guid] then
---     tp_print("unit it not tracked")
---     return
---   end
---   local healthbar = this:GetChildren()
---   healthbar:SetScript("OnUpdate",function UpdateHealth(this,false,{ healthbar:GetStatusBarColor() }) end)
--- end
-
 -- Copied from shagu since it resembled what I was trying to do anyway
 -- [ HookScript ]
 -- Securely post-hooks a script handler.
@@ -185,7 +106,7 @@ local function InitPlate(plate)
   local function UpdateHealth()
     local _, playerGUID = UnitExists("player")
     local plate = this:GetParent()
-    local reaction_level = UnitReaction(plate.guid, playerGUID) or 4
+    local reaction_level = plate.guid and (UnitReaction(plate.guid, playerGUID) or 4)
 
     if UnitAffectingCombat("player") and (plate.current_target or reaction_level < 4) then
       if not plate.current_target and plate.cc then
