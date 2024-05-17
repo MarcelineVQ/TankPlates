@@ -68,6 +68,8 @@ local function InitPlate(plate)
   -- how does pfui know who's being attacked
   -- reset the damn pfui map
 
+  -- add a marker to the plate that indicates if its your target
+
   local guid = plate:GetName(1)
 
   plate.guid = guid
@@ -136,10 +138,20 @@ local function InitPlate(plate)
   plate.healthbar:SetScript("OnHide", function()
     -- plate  has 'gone away' need to reset state
     -- next update will restore it
-    this:GetParent().current_target = nil
-    this:GetParent().previous_target = nil
-    plate.cc = false
-    plate.casting = false
+    local p = this:GetParent()
+    p.current_target = nil
+    p.previous_target = nil
+    p.cc = false
+    p.casting = false
+    p.guid = nil
+    p.previous_target = nil
+    
+    p.healthbar = plate:GetChildren()
+    p.original_color = { plate.healthbar:GetStatusBarColor() }
+  
+    p.tick = 0
+    p.cc = false
+    p.casting = false
   end)
 
   plate.healthbar:SetScript("OnUpdate", UpdateHealth)
