@@ -106,7 +106,7 @@ local function InitPlate(plate)
   local function UpdateHealth()
     local _, playerGUID = UnitExists("player")
     local plate = this:GetParent()
-    local reaction_level = plate.guid and (UnitReaction(plate.guid, playerGUID) or 4)
+    local reaction_level = (plate.guid and UnitReaction(plate.guid, playerGUID)) or 4
 
     if UnitAffectingCombat("player") and (plate.current_target or reaction_level < 4) then
       if not plate.current_target and plate.cc then
