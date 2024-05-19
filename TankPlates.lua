@@ -63,12 +63,16 @@ local function IsNamePlate(frame)
 end
 
 local function InitPlate(plate)
-  -- tp_print("plate init")
-
-  -- how does pfui know who's being attacked
-  -- reset the damn pfui map
-
-  -- add a marker to the plate that indicates if its your target
+  local regions = { plate:GetRegions() }
+  for _, region in ipairs(regions) do
+    if region:IsObjectType("FontString") and region:GetText() then
+      local text = region:GetText()
+      if not (tonumber(text) ~= nil or text == "??") then
+        plate.npc_name = text
+        plate.namefontstring = region
+      end
+    end
+  end
 
   local guid = plate:GetName(1)
 
@@ -86,12 +90,6 @@ local function InitPlate(plate)
   HookScript(plate,"OnUpdate", function ()
     plate.tick = plate.tick + arg1
 
-    -- the game re-uses plates, update the mob it's for
-    plate.guid = plate:GetName(1)
-
-    -- plate.cc =   plate.cc or false
-    -- plate.casting =   plate.casting or false
-
     local _,targeting = UnitExists(plate.guid.."target")
     if targeting ~= plate.current_target then
       plate.previous_target = plate.current_target
@@ -108,7 +106,14 @@ local function InitPlate(plate)
   local function UpdateHealth()
     local _, playerGUID = UnitExists("player")
     local plate = this:GetParent()
-    local reaction_level = (plate.guid and UnitReaction(plate.guid, playerGUID)) or 4
+    if not plate.guid then return end
+    local reaction_level = UnitReaction(plate.guid, playerGUID)
+
+    if UnitIsUnit("target",plate.guid) then
+      plate.namefontstring:SetText("- " .. plate.npc_name .. " -")
+    else
+      plate.namefontstring:SetText(plate.npc_name)
+    end
 
     if UnitAffectingCombat("player") and (plate.current_target or reaction_level < 4) then
       if not plate.current_target and plate.cc then
@@ -130,11 +135,16 @@ local function InitPlate(plate)
     end
   end
 
-  -- might be a critter now, etc
+  -- OnShow is when real plate init happens, doing it on the healthbar
+  -- because it's less likely to be molested by other addons
   plate.healthbar:SetScript("OnShow", function()
-    this:GetParent().original_color = { this:GetStatusBarColor() }
+    local plate = this:GetParent()
+    plate.original_color = { this:GetStatusBarColor() }
+    plate.npc_name = plate.namefontstring:GetText()
+    plate.guid = plate:GetName(1)
   end)
 
+  -- OnHide is when a plate 'expires'
   plate.healthbar:SetScript("OnHide", function()
     -- plate  has 'gone away' need to reset state
     -- next update will restore it
@@ -145,10 +155,10 @@ local function InitPlate(plate)
     p.casting = false
     p.guid = nil
     p.previous_target = nil
+    p.npc_name = nil
     
     p.healthbar = plate:GetChildren()
-    -- original color should hopefully be pulled via OnShow
-    p.original_color = { p.healthbar:GetStatusBarColor() } -- is this correct to do?
+    p.original_color = { p.healthbar:GetStatusBarColor() }
   
     p.tick = 0
     p.cc = false

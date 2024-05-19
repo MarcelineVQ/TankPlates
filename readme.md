@@ -1,4 +1,4 @@
-# Tank Plates 1.1.5
+# Tank Plates 1.2.0
 
 * For 1.12 wow client
 * Requires [SuperWow](https://github.com/balakethelock/SuperWoW/)
@@ -6,6 +6,7 @@
 ## Features
 
 * Colors enemy plates depending on if they're attacking you
+* Text highlight for the enemy you're targeting
 
 ## Bugs / Missing Features
 
