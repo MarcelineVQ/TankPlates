@@ -62,6 +62,17 @@ local function IsNamePlate(frame)
   return frame and (frame:IsShown() and frame:IsObjectType("Button")) and (frame:GetName(1) ~= "0x0000000000000000")
 end
 
+function UpdateTarget(plate)
+  local _, targeting = UnitExists(plate.guid.."target")
+  if targeting ~= plate.current_target then
+    -- only update previous target if there is a current one
+    if plate.current_target then
+      plate.previous_target = plate.current_target
+    end
+    plate.current_target = targeting
+  end
+end
+
 local function InitPlate(plate)
 
   plate.npc_name = "<unknown>"
@@ -94,18 +105,14 @@ local function InitPlate(plate)
   plate.casting = false
 
   HookScript(plate,"OnUpdate", function ()
-    plate.tick = plate.tick + arg1
+    this.tick = this.tick + arg1
 
-    local _,targeting = UnitExists(plate.guid.."target")
-    if targeting ~= plate.current_target then
-      plate.previous_target = plate.current_target
-      plate.current_target = targeting
-    end
+    UpdateTarget(this)
 
     -- cc check
-    if plate.tick > 0.1 then
-      plate.tick = 0
-      plate.cc = UnitIsCC(plate.guid)
+    if this.tick > 0.1 then
+      this.tick = 0
+      this.cc = UnitIsCC(this.guid)
     end
   end)
 
@@ -124,18 +131,25 @@ local function InitPlate(plate)
       plate.namefontstring:SetTextColor(c[1],c[2],c[3],c[4])
     end
 
+    -- The cases we want 'green' for are:
+    -- 1. Being the previous target if a mob is casting on someone else
+    -- 2. Being targeted
+    -- 3. Being the previous target when a mob has no current target
     if UnitAffectingCombat("player") and (plate.current_target or reaction_level < 4) then
       if not plate.current_target and plate.cc then
         this:SetStatusBarColor(1, 1, 1, 0.6)
-      elseif (plate.current_target == playerGUID) or
-        (plate.casting and (plate.previous_target == playerGUID and plate.casting)) or
-        not plate.current_target and plate.previous_target == playerGUID then
-        -- The cases we want 'green' for are:
-        -- 1. Being targeted
-        -- 2. Being the previous target if a mob is casting on someone else
-        -- 3. Being the previous target when a mob has no current target
+      elseif (plate.casting and (plate.previous_target == playerGUID)) then
+        -- casting on someone else now, but was attacking you
+        this:SetStatusBarColor(0, 1, 0, 1)
+        -- tp_print(UnitName(plate.guid).." casting on "..UnitName(plate.current_target))
+      elseif plate.current_target == playerGUID then
+        -- attacking you
+        this:SetStatusBarColor(0, 1, 0, 1)
+      elseif not plate.casting and (not plate.current_target and plate.previous_target == playerGUID) then
+        -- fleeing, usually
         this:SetStatusBarColor(0, 1, 0, 1)
       else
+        -- not attacking you
         this:SetStatusBarColor(1, 0, 0, 1)
       end
     else
@@ -172,7 +186,6 @@ local function InitPlate(plate)
 
     p.tick = 0
     p.cc = false
-    p.casting = false
   end)
 
   plate.healthbar:SetScript("OnUpdate", UpdateHealth)
