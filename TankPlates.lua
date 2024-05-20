@@ -63,6 +63,11 @@ local function IsNamePlate(frame)
 end
 
 local function InitPlate(plate)
+
+  plate.npc_name = "<unknown>"
+  plate.namefontstring = nil
+  plate.npc_name_color = {}
+
   local regions = { plate:GetRegions() }
   for _, region in ipairs(regions) do
     if region:IsObjectType("FontString") and region:GetText() then
@@ -88,11 +93,10 @@ local function InitPlate(plate)
   plate.cc = false
   plate.casting = false
 
-  -- should this instead, check for a guid change, and if so reset only then?
   HookScript(plate,"OnUpdate", function ()
     plate.tick = plate.tick + arg1
 
-    local _,targeting = plate.guid and UnitExists(plate.guid.."target")
+    local _,targeting = UnitExists(plate.guid.."target")
     if targeting ~= plate.current_target then
       plate.previous_target = plate.current_target
       plate.current_target = targeting
@@ -113,7 +117,7 @@ local function InitPlate(plate)
 
     if UnitIsUnit("target",plate.guid) then
       plate.namefontstring:SetText("- " .. plate.npc_name .. " -")
-      plate.namefontstring:SetTextColor(1,1,0,0)
+      plate.namefontstring:SetTextColor(1,1,0,1)
     else
       plate.namefontstring:SetText(plate.npc_name)
       local c = plate.npc_name_color
@@ -150,7 +154,7 @@ local function InitPlate(plate)
     plate.guid = plate:GetName(1)
   end)
 
-  -- OnHide is when a plate 'expires'
+  -- OnHide is when a plate 'expires' and needs resetting since the game might re-use it on another unit
   plate.healthbar:SetScript("OnHide", function()
     -- plate  has 'gone away' need to reset state
     -- next update will restore it
@@ -161,7 +165,7 @@ local function InitPlate(plate)
     p.casting = false
     p.guid = nil
     p.previous_target = nil
-    p.npc_name = nil
+    p.npc_name = "<unknown>"
 
     p.healthbar = plate:GetChildren()
     p.original_color = { p.healthbar:GetStatusBarColor() }
