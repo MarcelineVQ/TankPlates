@@ -70,6 +70,7 @@ local function InitPlate(plate)
       if not (tonumber(text) ~= nil or text == "??") then
         plate.npc_name = text
         plate.namefontstring = region
+        plate.npc_name_color = { region:GetTextColor() }
       end
     end
   end
@@ -87,10 +88,11 @@ local function InitPlate(plate)
   plate.cc = false
   plate.casting = false
 
+  -- should this instead, check for a guid change, and if so reset only then?
   HookScript(plate,"OnUpdate", function ()
     plate.tick = plate.tick + arg1
 
-    local _,targeting = UnitExists(plate.guid.."target")
+    local _,targeting = plate.guid and UnitExists(plate.guid.."target")
     if targeting ~= plate.current_target then
       plate.previous_target = plate.current_target
       plate.current_target = targeting
@@ -111,8 +113,11 @@ local function InitPlate(plate)
 
     if UnitIsUnit("target",plate.guid) then
       plate.namefontstring:SetText("- " .. plate.npc_name .. " -")
+      plate.namefontstring:SetTextColor(1,1,0,0)
     else
       plate.namefontstring:SetText(plate.npc_name)
+      local c = plate.npc_name_color
+      plate.namefontstring:SetTextColor(c[1],c[2],c[3],c[4])
     end
 
     if UnitAffectingCombat("player") and (plate.current_target or reaction_level < 4) then
@@ -141,6 +146,7 @@ local function InitPlate(plate)
     local plate = this:GetParent()
     plate.original_color = { this:GetStatusBarColor() }
     plate.npc_name = plate.namefontstring:GetText()
+    plate.npc_name_color = { plate.namefontstring:GetTextColor() }
     plate.guid = plate:GetName(1)
   end)
 
@@ -156,10 +162,10 @@ local function InitPlate(plate)
     p.guid = nil
     p.previous_target = nil
     p.npc_name = nil
-    
+
     p.healthbar = plate:GetChildren()
     p.original_color = { p.healthbar:GetStatusBarColor() }
-  
+
     p.tick = 0
     p.cc = false
     p.casting = false
