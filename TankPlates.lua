@@ -123,10 +123,10 @@ local function InitPlate(plate)
     local reaction_level = UnitReaction(plate.guid, playerGUID)
 
     if UnitIsUnit("target",plate.guid) then
-      plate.namefontstring:SetText("- " .. plate.npc_name .. " -")
+      -- plate.namefontstring:SetText(plate.npc_name)
       plate.namefontstring:SetTextColor(1,1,0,1)
     else
-      plate.namefontstring:SetText(plate.npc_name)
+      -- plate.namefontstring:SetText(plate.npc_name)
       local c = plate.npc_name_color
       plate.namefontstring:SetTextColor(c[1],c[2],c[3],c[4])
     end
@@ -221,7 +221,7 @@ local function Events()
     local _,source = UnitExists(arg1)
     local _,target = UnitExists(arg2)
     local n,_,icon,_,_ = SpellInfo(arg4)
-    -- local source_is_plate = false
+
     for k,plate in pairs(registry) do
       if source == plate.guid then
         if arg3 == "START" then
