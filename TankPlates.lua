@@ -150,7 +150,7 @@ local function InitPlate2(plate)
     -- 1. Being the previous target if a mob is casting on someone else
     -- 2. Being targeted
     -- 3. Being the previous target when a mob has no current target
-    if UnitAffectingCombat("player") and (tracked_guids[guid].current_target or reaction_level < 4) then
+    if UnitAffectingCombat("player") and UnitAffectingCombat(guid) and (tracked_guids[guid].current_target or reaction_level < 4) then
       if not tracked_guids[guid].current_target and tracked_guids[guid].cc then
         this:SetStatusBarColor(1, 1, 1, 0.6)
       elseif (tracked_guids[guid].casting and (tracked_guids[guid].previous_target == playerGUID)) then
@@ -162,7 +162,7 @@ local function InitPlate2(plate)
         this:SetStatusBarColor(0, 1, 0, 1)
       elseif not tracked_guids[guid].casting and (not tracked_guids[guid].current_target and tracked_guids[guid].previous_target == playerGUID) then
         -- fleeing, usually
-        this:SetStatusBarColor(0, 1, 0, 0.8)
+        this:SetStatusBarColor(0, 1, 0, 1)
       else
         -- not attacking you
         this:SetStatusBarColor(1, 0, 0, 1)
