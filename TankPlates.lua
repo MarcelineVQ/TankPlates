@@ -62,72 +62,87 @@ local function IsNamePlate(frame)
   return frame and (frame:IsShown() and frame:IsObjectType("Button")) and (frame:GetName(1) ~= "0x0000000000000000")
 end
 
-function UpdateTarget(plate)
-  local _, targeting = UnitExists(plate.guid.."target")
-  if targeting ~= plate.current_target then
+local tracked_guids = {}
+
+local function UpdateTarget(plate)
+  local guid = plate:GetName(1)
+  if not guid then return end
+  local _, targeting = UnitExists(guid.."target")
+  if targeting ~= tracked_guids[guid].current_target then
     -- only update previous target if there is a current one
-    if plate.current_target then
-      plate.previous_target = plate.current_target
+    if tracked_guids[guid].current_target then
+      tracked_guids[guid].previous_target = tracked_guids[guid].current_target
     end
-    plate.current_target = targeting
+    tracked_guids[guid].current_target = targeting
   end
 end
 
-local function InitPlate(plate)
+local function InitPlate2(plate)
 
-  plate.npc_name = "<unknown>"
-  plate.namefontstring = nil
-  plate.npc_name_color = {}
+  local guid = plate:GetName(1)
 
-  local regions = { plate:GetRegions() }
-  for _, region in ipairs(regions) do
+  if tracked_guids[guid] then
+    debug_print("already tracked")
+    return
+  end
+
+  debug_print("adding "..guid.." "..UnitName(guid))
+  -- save orignal guid's color now
+  tracked_guids[guid] = {
+    unit_namefontstring = nil,
+    unit_name_color = {},
+    healthbar_color = { plate:GetChildren():GetStatusBarColor() },
+    current_target = nil,
+    previous_target = nil,
+    tick = 0,
+    cc = false,
+    casting = false,
+  }
+
+  for _, region in ipairs( { plate:GetRegions() } ) do
     if region:IsObjectType("FontString") and region:GetText() then
       local text = region:GetText()
       if not (tonumber(text) ~= nil or text == "??") then
-        plate.npc_name = text
         plate.namefontstring = region
-        plate.npc_name_color = { region:GetTextColor() }
+        tracked_guids[guid].unit_name_color = { region:GetTextColor() }
       end
     end
   end
 
-  local guid = plate:GetName(1)
-
-  plate.guid = guid
-  _, plate.current_target = UnitExists(guid.."target")
-  plate.previous_target = nil
-  
-  plate.healthbar = plate:GetChildren()
-  plate.original_color = { plate.healthbar:GetStatusBarColor() }
-
-  plate.tick = 0
-  plate.cc = false
-  plate.casting = false
-
   HookScript(plate,"OnUpdate", function ()
-    this.tick = this.tick + arg1
+    local guid = this:GetName(1)
+    if not tracked_guids[guid] then
+      debug_print("init loop hasn't grabbed this guid yet")
+      return
+    end
+    tracked_guids[guid].tick = tracked_guids[guid].tick + arg1
 
     UpdateTarget(this)
 
     -- cc check
-    if this.tick > 0.1 then
-      this.tick = 0
-      this.cc = UnitIsCC(this.guid)
+    if tracked_guids[guid].tick > 0.1 then
+      tracked_guids[guid].tick = 0
+      tracked_guids[guid].cc = UnitIsCC(guid)
     end
   end)
 
   local function UpdateHealth()
     local _, playerGUID = UnitExists("player")
     local plate = this:GetParent()
-    if not plate.guid then return end
-    local reaction_level = UnitReaction(plate.guid, playerGUID)
+    local guid = plate:GetName(1)
+    if not guid then
+      debug_print("plate didn't have guid?")
+      return end
+    if not tracked_guids[guid] then
+      debug_print("plate init loop hasn't added this guid yet")
+      return
+    end
+    local reaction_level = UnitReaction(guid, playerGUID)
 
-    if UnitIsUnit("target",plate.guid) then
-      -- plate.namefontstring:SetText(plate.npc_name)
+    if UnitIsUnit("target",guid) then
       plate.namefontstring:SetTextColor(1,1,0,1)
     else
-      -- plate.namefontstring:SetText(plate.npc_name)
-      local c = plate.npc_name_color
+      local c = tracked_guids[guid].unit_name_color
       plate.namefontstring:SetTextColor(c[1],c[2],c[3],c[4])
     end
 
@@ -135,83 +150,55 @@ local function InitPlate(plate)
     -- 1. Being the previous target if a mob is casting on someone else
     -- 2. Being targeted
     -- 3. Being the previous target when a mob has no current target
-    if UnitAffectingCombat("player") and (plate.current_target or reaction_level < 4) then
-      if not plate.current_target and plate.cc then
+    if UnitAffectingCombat("player") and (tracked_guids[guid].current_target or reaction_level < 4) then
+      if not tracked_guids[guid].current_target and tracked_guids[guid].cc then
         this:SetStatusBarColor(1, 1, 1, 0.6)
-      elseif (plate.casting and (plate.previous_target == playerGUID)) then
+      elseif (tracked_guids[guid].casting and (tracked_guids[guid].previous_target == playerGUID)) then
         -- casting on someone else now, but was attacking you
         this:SetStatusBarColor(0, 1, 0, 1)
         -- tp_print(UnitName(plate.guid).." casting on "..UnitName(plate.current_target))
-      elseif plate.current_target == playerGUID then
+      elseif tracked_guids[guid].current_target == playerGUID then
         -- attacking you
         this:SetStatusBarColor(0, 1, 0, 1)
-      elseif not plate.casting and (not plate.current_target and plate.previous_target == playerGUID) then
+      elseif not tracked_guids[guid].casting and (not tracked_guids[guid].current_target and tracked_guids[guid].previous_target == playerGUID) then
         -- fleeing, usually
-        this:SetStatusBarColor(0, 1, 0, 1)
+        this:SetStatusBarColor(0, 1, 0, 0.8)
       else
         -- not attacking you
         this:SetStatusBarColor(1, 0, 0, 1)
       end
     else
-      local c = plate.original_color
+      local c = tracked_guids[guid].healthbar_color
       this:SetStatusBarColor(c[1], c[2], c[3], c[4])
     end
   end
 
-  -- OnShow is when real plate init happens, doing it on the healthbar
-  -- because it's less likely to be molested by other addons
-  plate.healthbar:SetScript("OnShow", function()
-    local plate = this:GetParent()
-    plate.original_color = { this:GetStatusBarColor() }
-    plate.npc_name = plate.namefontstring:GetText()
-    plate.npc_name_color = { plate.namefontstring:GetTextColor() }
-    plate.guid = plate:GetName(1)
-  end)
-
-  -- OnHide is when a plate 'expires' and needs resetting since the game might re-use it on another unit
-  plate.healthbar:SetScript("OnHide", function()
-    -- plate  has 'gone away' need to reset state
-    -- next update will restore it
-    local p = this:GetParent()
-    p.current_target = nil
-    p.previous_target = nil
-    p.cc = false
-    p.casting = false
-    p.guid = nil
-    p.previous_target = nil
-    p.npc_name = "<unknown>"
-
-    p.healthbar = plate:GetChildren()
-    p.original_color = { p.healthbar:GetStatusBarColor() }
-
-    p.tick = 0
-    p.cc = false
-  end)
-
-  plate.healthbar:SetScript("OnUpdate", UpdateHealth)
-  plate.healthbar:SetScript("OnValueChanged", UpdateHealth)
+  -- if not plate:GetChildren().set then
+    -- plate:GetChildren().set = guid
+  plate:GetChildren():SetScript("OnUpdate", UpdateHealth)
+  plate:GetChildren():SetScript("OnValueChanged", UpdateHealth)
+  -- end
 end
 
--- Copied from shagu since it resembled what I was trying to do anyway
-local initialized = 0
-local parentcount = 0
-local registry = {}
 local plateTick = 0
+local cleanTick = 0
 local function Update()
   plateTick = plateTick + arg1
-  if plateTick >= 0.1 then
+  cleanTick = cleanTick + arg1
+  if plateTick >= 0.075 then
     plateTick = 0 
-    parentcount = WorldFrame:GetNumChildren()
-    if initialized < parentcount then
-      local children = { WorldFrame:GetChildren() }
-      for i = initialized + 1, parentcount do
-        plate = children[i]
-        if IsNamePlate(plate) and not registry[plate] then
-          InitPlate(plate)
-          registry[plate] = plate
-        end
+    for _,plate in pairs({ WorldFrame:GetChildren() }) do
+      if IsNamePlate(plate) then
+        InitPlate2(plate)
       end
-      initialized = parentcount
+    end
+  end
+  if cleanTick > 10 then
+    cleanTick = 0
+    for guid,_ in pairs(tracked_guids) do
+      if not UnitExists(guid) then
+        tracked_guids[guid] = nil
+      end
     end
   end
 end
@@ -222,12 +209,12 @@ local function Events()
     local _,target = UnitExists(arg2)
     local n,_,icon,_,_ = SpellInfo(arg4)
 
-    for k,plate in pairs(registry) do
-      if source == plate.guid then
+    for guid,data in pairs(tracked_guids) do
+      if source == guid then
         if arg3 == "START" then
-          plate.casting = true
+          data.casting = true
         elseif arg3 == "FAIL" or arg3 == "CAST" then
-          plate.casting = false
+          data.casting = false
         end
         break
       end
