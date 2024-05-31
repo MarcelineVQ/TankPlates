@@ -2,6 +2,6 @@
 ## Title: Tank Plates
 ## Notes: highlight mobs that aren't targeting you
 ## Author: Ehawne (Weird Vibes)
-## Version:  1.2.1
+## Version:  1.2.3
 
 TankPlates.lua

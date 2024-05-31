@@ -15,7 +15,7 @@ if not SetAutoloot then
   return
 end
 
--- local plates = {}
+local player_guid = nil
 
 local cc_spells = {
   "Hibernate",
@@ -64,10 +64,10 @@ end
 
 local tracked_guids = {}
 
-local function UpdateTarget(plate)
-  local guid = plate:GetName(1)
+local function UpdateTarget(guid,targetArg)
   if not guid then return end
   local _, targeting = UnitExists(guid.."target")
+  targeting = targetArg or targeting
   if targeting ~= tracked_guids[guid].current_target then
     -- only update previous target if there is a current one
     if tracked_guids[guid].current_target then
@@ -117,7 +117,7 @@ local function InitPlate2(plate)
     end
     tracked_guids[guid].tick = tracked_guids[guid].tick + arg1
 
-    UpdateTarget(this)
+    UpdateTarget(guid)
 
     -- cc check
     if tracked_guids[guid].tick > 0.1 then
@@ -126,8 +126,8 @@ local function InitPlate2(plate)
     end
   end)
 
+  local origname = plate.namefontstring:GetText()
   local function UpdateHealth()
-    local _, playerGUID = UnitExists("player")
     local plate = this:GetParent()
     local guid = plate:GetName(1)
     if not guid then
@@ -137,39 +137,51 @@ local function InitPlate2(plate)
       debug_print("plate init loop hasn't added this guid yet")
       return
     end
-    local reaction_level = UnitReaction(guid, playerGUID)
+    local unit = tracked_guids[guid]
 
     if UnitIsUnit("target",guid) then
       plate.namefontstring:SetTextColor(1,1,0,1)
     else
-      local c = tracked_guids[guid].unit_name_color
-      plate.namefontstring:SetTextColor(c[1],c[2],c[3],c[4])
+      plate.namefontstring:SetTextColor(unpack(unit.unit_name_color))
     end
 
-    -- The cases we want 'green' for are:
-    -- 1. Being the previous target if a mob is casting on someone else
-    -- 2. Being targeted
-    -- 3. Being the previous target when a mob has no current target
-    if UnitAffectingCombat("player") and UnitAffectingCombat(guid) and (tracked_guids[guid].current_target or reaction_level < 4) then
-      if not tracked_guids[guid].current_target and tracked_guids[guid].cc then
-        this:SetStatusBarColor(1, 1, 1, 0.6)
-      elseif (tracked_guids[guid].casting and (tracked_guids[guid].previous_target == playerGUID)) then
+    if DEBUG then
+      if unit.current_target then
+        plate.namefontstring:SetText(UnitName(unit.current_target))
+      else
+        plate.namefontstring:SetText(origname)
+      end
+    end
+
+    -- First, determine if this is a unit we should care to color.
+    -- Is the player in combat, and is the unit in combat?
+    -- if UnitAffectingCombat("player") and UnitAffectingCombat(guid) then
+    if UnitAffectingCombat("player") and UnitAffectingCombat(guid) and
+       not UnitCanAssist("player",guid) then -- don't color friendlies
+
+      -- The cases we want 'green' for are:
+      -- 1. Being the previous target if a mob is casting on someone else
+      -- 2. Being targeted
+      -- 3. Being the previous target when a mob has no current target
+
+      if not unit.current_target and unit.cc then
+        this:SetStatusBarColor(1, 1, 1, 0.6) -- white
+      elseif (unit.casting and (unit.previous_target == player_guid)) then
         -- casting on someone else now, but was attacking you
-        this:SetStatusBarColor(0, 1, 0, 1)
+        this:SetStatusBarColor(0, 1, 0, 1) -- green
         -- tp_print(UnitName(plate.guid).." casting on "..UnitName(plate.current_target))
-      elseif tracked_guids[guid].current_target == playerGUID then
+      elseif unit.current_target == player_guid then
         -- attacking you
-        this:SetStatusBarColor(0, 1, 0, 1)
-      elseif not tracked_guids[guid].casting and (not tracked_guids[guid].current_target and tracked_guids[guid].previous_target == playerGUID) then
+        this:SetStatusBarColor(0, 1, 0, 1) -- green
+      elseif not unit.casting and (not unit.current_target and unit.previous_target == player_guid) then
         -- fleeing, usually
-        this:SetStatusBarColor(0, 1, 0, 1)
+        this:SetStatusBarColor(0, 1, 0, 1) -- green
       else
         -- not attacking you
-        this:SetStatusBarColor(1, 0, 0, 1)
+        this:SetStatusBarColor(1, 0, 0, 1) -- red
       end
     else
-      local c = tracked_guids[guid].healthbar_color
-      this:SetStatusBarColor(c[1], c[2], c[3], c[4])
+      this:SetStatusBarColor(unpack(unit.healthbar_color))
     end
   end
 
@@ -207,14 +219,15 @@ local function Events()
   if event == "UNIT_CASTEVENT" then
     local _,source = UnitExists(arg1)
     local _,target = UnitExists(arg2)
-    local n,_,icon,_,_ = SpellInfo(arg4)
+
+    if not source then return end
 
     for guid,data in pairs(tracked_guids) do
       if source == guid then
         if arg3 == "START" then
-          data.casting = true
+          tracked_guids[guid].casting = true
         elseif arg3 == "FAIL" or arg3 == "CAST" then
-          data.casting = false
+          tracked_guids[guid].casting = false
         end
         break
       end
@@ -222,8 +235,16 @@ local function Events()
   end
 end
 
-local tankplates = CreateFrame("Frame")
+local function Init()
+  if event == "PLAYER_ENTERING_WORLD" then
+    _,player_guid = UnitExists("player")
+    this:SetScript("OnEvent", Events)
+    this:SetScript("OnUpdate", Update)
+    this:UnregisterEvent("PLAYER_ENTERING_WORLD")
+  end
+end
 
-tankplates:SetScript("OnEvent", Events)
-tankplates:SetScript("OnUpdate", Update)
+local tankplates = CreateFrame("Frame")
+tankplates:SetScript("OnEvent", Init)
+tankplates:RegisterEvent("PLAYER_ENTERING_WORLD")
 tankplates:RegisterEvent("UNIT_CASTEVENT")
