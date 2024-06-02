@@ -1,4 +1,4 @@
-# Tank Plates 1.2.3
+# Tank Plates 1.2.4
 
 * For 1.12 wow client
 * Requires [SuperWow](https://github.com/balakethelock/SuperWoW/)
