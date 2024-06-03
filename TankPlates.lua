@@ -81,6 +81,15 @@ local function InitPlate2(plate)
   if not plate.init then
     local guid = plate:GetName(1)
 
+    for _, region in ipairs( { plate:GetRegions() } ) do
+      if region:IsObjectType("FontString") and region:GetText() then
+        local text = region:GetText()
+        if not (tonumber(text) ~= nil or text == "??") then
+          plate.namefontstring = region
+        end
+      end
+    end
+
     HookScript(plate,"OnUpdate", function ()
       local guid = this:GetName(1)
       if not tracked_guids[guid] then
@@ -179,13 +188,13 @@ local function Update()
         -- the plate can refer to a different unit constantly, check for new id's here and set the plate logic once
         -- to depend on its current guid
         local guid = plate:GetName(1)
-        -- save orignal guid's color now
+        InitPlate2(plate)
 
         if not tracked_guids[guid] then
           debug_print("adding "..guid.." "..UnitName(guid))
           tracked_guids[guid] = {
             unit_namefontstring = nil,
-            unit_name_color = {},
+            unit_name_color = { plate.namefontstring:GetTextColor() },
             healthbar_color = { plate:GetChildren():GetStatusBarColor() },
             current_target = nil,
             previous_target = nil,
@@ -194,18 +203,6 @@ local function Update()
             casting = false,
           }
         end
-
-        for _, region in ipairs( { plate:GetRegions() } ) do
-          if region:IsObjectType("FontString") and region:GetText() then
-            local text = region:GetText()
-            if not (tonumber(text) ~= nil or text == "??") then
-              plate.namefontstring = region
-              tracked_guids[guid].unit_name_color = { region:GetTextColor() }
-            end
-          end
-        end
-
-        InitPlate2(plate)
       end
     end
   end
