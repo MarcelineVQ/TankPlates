@@ -9,15 +9,26 @@ local function debug_print(msg)
   if DEBUG then tp_print(msg) end
 end
 
--- stop loading addon if no superwow
-if not SetAutoloot then
-  DEFAULT_CHAT_FRAME:AddMessage("[|cff00ff00Tank|cffff0000Plates|r] requires |cffffd200SuperWoW|r to operate.")
-  return
-end
+local L = "TankPlates"
+if (GetLocale() == "ruRU") then
+ SUPERWOW_REQ = "[|cff00ff00Tank|cffff0000Plates|r] для работы требует |cffffd200SuperWoW|r."
 
-local player_guid = nil
+cc_spells = {
+  "Спячка",
+  "Волшебная пыль",
+  "Превращение",
+  "Сковывание нежити",
+  "Парализующий удар",
+  "Ошеломление",
+  "Превращение: черепаха",
+  "Превращение: свинья",
+  "Превращение: корова",
+  "Полиморф: цыпленок",
+}
+else
+ SUPERWOW_REQ = "[|cff00ff00Tank|cffff0000Plates|r] requires |cffffd200SuperWoW|r to operate."
 
-local cc_spells = {
+cc_spells = {
   "Hibernate",
   "Magic Dust",
   "Polymorph",
@@ -29,6 +40,15 @@ local cc_spells = {
   "Polymorph: Cow",
   "Polymorph: Chicken",
 }
+end
+
+-- stop loading addon if no superwow
+if not SetAutoloot then
+  DEFAULT_CHAT_FRAME:AddMessage(SUPERWOW_REQ)
+  return
+end
+
+local player_guid = nil
 
 -- shackle, sheep, hibernate, magic dust, etc
 local function UnitIsCC(unit)
