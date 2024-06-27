@@ -57,7 +57,7 @@ local function UnitIsCC(unit)
     local name = SpellInfo(spell_id)
     for _,spell in ipairs(cc_spells) do
       if name == spell then
-          debug_print("CC Detected: " .. name .. ", on" .. UnitName(unit))
+          debug_print("CC Detected: " .. name .. ", on " .. UnitName(unit))
         return true
       end
     end
