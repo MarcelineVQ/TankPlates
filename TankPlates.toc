@@ -1,7 +1,7 @@
 ## Interface: 11200
-## Title: Tank Plates 1.2.4
+## Title: Tank Plates 1.3.0
 ## Notes: highlight mobs that aren't targeting you
 ## Author: Ehawne (Weird Vibes)
-## Version:  1.2.4
+## Version: 1.3.0
 
 TankPlates.lua
