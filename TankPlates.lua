@@ -32,7 +32,8 @@ local cc_spells = {
 local function UnitIsCC(unit)
   for i=1,40 do
     local dTexture,_,_,spell_id = UnitDebuff(unit,i)
-    if spell_id then
+    local name = SpellInfo(spell_id)
+    if spell_id and name then
       local name = SpellInfo(spell_id)
       for _,spell in ipairs(cc_spells) do
         if string.find(name,"^"..spell) then
