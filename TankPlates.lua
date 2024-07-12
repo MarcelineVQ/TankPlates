@@ -61,7 +61,9 @@ end
 
 local function IsNamePlate(frame)
   local guid = frame:GetName(1)
-  return frame and (frame:IsShown() and frame:IsObjectType("Button")) and (guid and guid ~= "0x0000000000000000")
+  return frame and (frame:IsShown() and frame:IsObjectType("Button"))
+    and (guid and guid ~= "0x0000000000000000")
+    and (frame:GetChildren() and frame:GetChildren():IsObjectType("StatusBar"))
 end
 
 local function UpdateTarget(guid,targetArg)
