@@ -78,8 +78,10 @@ local function UpdateTarget(guid,targetArg)
     -- only update previous target if there is a current one
     if tracked_guids[guid].current_target then
       tracked_guids[guid].previous_target = tracked_guids[guid].current_target
+      tracked_guids[guid].previous_target_name = tracked_guids[guid].current_target_name
     end
     tracked_guids[guid].current_target = targeting
+    tracked_guids[guid].current_target_name = UnitName(targeting)
   end
 end
 
@@ -208,7 +210,9 @@ local function Update()
             unit_name_color = { plate.namefontstring:GetTextColor() },
             healthbar_color = { plate:GetChildren():GetStatusBarColor() },
             current_target = nil,
+            current_target_name = nil,
             previous_target = nil,
+            previous_target_name = nil,
             tick = 0,
             cc = false,
             casting = false,
