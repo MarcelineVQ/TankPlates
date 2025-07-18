@@ -17,6 +17,10 @@ end
 
 local player_guid = nil
 local tracked_guids = {}
+local pfuiEnabled = false
+if 1 == IsAddOnLoaded("pfUI") then
+  pfuiEnabled = true
+end
 
 local cc_spells = {
   "Polymorph",
