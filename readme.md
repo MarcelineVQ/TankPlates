@@ -6,7 +6,7 @@
 
 ## Features
 
-* Colors enemy plates depending on if they're attacking you
+* Colors enemy plates depending on if they're attacking you or another tank (if you are using PFUI and the toggle tank function)
 * Text highlight for the enemy you're targeting
 
 ## Bugs / Missing Features
