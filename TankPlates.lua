@@ -172,17 +172,17 @@ local function InitPlate(plate)
         -- For instance if we choose (0,0,1,1) blue, the shagu reads this as friendly player and may color based on class.
         -- Due to this yellow (neutral) has been chosen for now.
         this:SetStatusBarColor(1, 1, 0, 0.6)
-      elseif (unit.casting and (unit.casting_at == player_guid or unit.previous_target == player_guid)) then
-        -- casting on someone but was attacking you
+      elseif (unit.casting and (unit.casting_at == player_guid or unit.previous_target == player_guid or UnitIsPfuiTank(unit.previous_target_name))) then
+        -- casting on someone but was attacking you or another tank (toggled on via pfui)
         this:SetStatusBarColor(0, 1, 0, 1) -- green
-      elseif unit.current_target == player_guid then
-        -- attacking you
+      elseif unit.current_target == player_guid or UnitIsPfuiTank(unit.current_target_name) then
+        -- attacking you or another tank (toggled on via pfui)
         this:SetStatusBarColor(0, 1, 0, 1) -- green
-      elseif not unit.casting and (not unit.current_target and unit.previous_target == player_guid) then
-        -- fleeing but was attacking you
+      elseif not unit.casting and (not unit.current_target and (unit.previous_target == player_guid or UnitIsPfuiTank(unit.previous_target_name))) then
+        -- fleeing but was attacking you or another tank (toggled on via pfui)
         this:SetStatusBarColor(0, 1, 0, 1) -- green
       else
-        -- not attacking you
+        -- not attacking you or another tank
         this:SetStatusBarColor(1, 0, 0, 1) -- red
       end
     else
