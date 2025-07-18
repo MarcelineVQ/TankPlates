@@ -85,6 +85,13 @@ local function UpdateTarget(guid,targetArg)
   end
 end
 
+local function UnitIsPfuiTank(enemy_target_name)
+	if not pfuiEnabled then return false end
+	if not enemy_target_name then return false end
+	if pfUI.uf.raid.tankrole[enemy_target_name] then return true end
+	return false
+end
+
 local function InitPlate(plate)
   if plate.initialized then return end
   local guid = plate:GetName(1)
