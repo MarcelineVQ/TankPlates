@@ -1,7 +1,8 @@
-# Tank Plates 1.2.4
+# Tank Plates 1.3.2
 
 * For 1.12 wow client
-* Requires [SuperWow](https://github.com/balakethelock/SuperWoW/)
+* Requires [SuperWoW](https://github.com/balakethelock/SuperWoW/)
+* Update both SuperWoW and this addon if you experience errors
 
 ## Features
 
